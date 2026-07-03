@@ -3,22 +3,7 @@
 #include "ShaderParameterStruct.h"
 #include "RenderGraphBuilder.h"
 #include "RenderGraphUtils.h"
-
-
-
-struct Particle
-{
-	FVector3f position;
-	float _pad1;
-	FVector3f prevPosition;
-	float _pad2;
-	FVector3f velocity;
-	float _pad3;
-	FVector3f accumulatedForce;
-	float _pad4;
-	float invMass;
-	FVector3f prevCollisionNormal;
-};
+#include "Shader_Commons.h"
 
 
 class FIntegrateCS : public FGlobalShader {
