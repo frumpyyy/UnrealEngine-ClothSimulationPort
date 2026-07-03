@@ -1,0 +1,46 @@
+#pragma once
+
+#include "/Engine/Public/Platform.ush"
+
+struct Particle
+{
+    float3 position;
+    float _pad1;
+    float3 prevPosition;
+    float _pad2;
+    float3 velocity;
+    float _pad3;
+    float3 accumulatedForce;
+    float _pad4;
+    float invMass;
+    float3 prevCollisionNormal;
+};
+
+
+RWStructuredBuffer<Particle> Particles;
+
+uint numParticles;
+float3 gravity;
+float dt;
+
+[numthreads(256, 1, 1)]
+void Integrate(uint3 DispatchThreadId : SV_DispatchThreadID)
+{
+    uint id = DispatchThreadId.x;
+    if (id >= numParticles)
+        return;
+    
+    Particle p = Particles[id];
+
+    if (p.invMass == 0)
+        return;
+
+    if (length(gravity) > 0.0001)
+        p.velocity += gravity * dt;
+
+    p.prevPosition = p.position;
+
+    p.position += p.velocity * dt;
+
+    Particles[id] = p;
+}

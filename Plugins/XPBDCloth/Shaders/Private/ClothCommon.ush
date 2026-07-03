@@ -1,0 +1,141 @@
+#ifndef CLOTH_COMMON
+#define CLOTH_COMMON
+
+struct Particle
+{
+    float3 position;
+    float _pad1;
+    float3 prevPosition;
+    float _pad2;
+    float3 velocity;
+    float _pad3;
+    float3 accumulatedForce;
+    float _pad4;
+    float invMass;
+    float3 prevCollisionNormal;
+};
+
+struct Spring
+{
+    uint A, B;
+    float restingLength, lambda, compliance;
+    uint colour;
+    uint pad[2];
+};
+
+cbuffer SimParams : register(b0)
+{
+    // group0
+    float dt;
+    float3 gravity;
+
+    // group1
+    float3 windVelocity;
+    float windDrag;
+
+    // group2
+    uint numParticles;
+    uint numSprings;
+    uint numIterations;
+    float compliance;
+
+    // group3
+    uint numSubSteps;
+    uint numSpheres;
+    uint numOBBs;
+    uint numPlanes;
+    uint numCells;
+
+    // group4
+    float cellSize;
+    float invCellSize;
+    float spacing;
+    float _SPpad0;
+
+    // group5
+    float damping;
+    float friction;
+    uint stage;
+    uint passOfStage;
+
+    // group6
+    uint numElements;
+    uint sortSize;
+    uint _SPpad2;
+    uint _SPpad3;
+    
+    uint particleIndex;
+    float stiffness;
+    float padding_a;
+    float padding_b;
+
+    float3 targetPosition;
+    float padding;
+
+    uint dragging;
+    float3 padding1;
+};
+
+struct Sphere
+{
+    float3 Center;
+    float Radius;
+    float3 Velocity;
+    float invMass;
+    float3 CenterPrevious;
+    float padding;
+};
+
+struct OBB
+{
+    float3 center;
+    float pad0;
+    float3 axisX;
+    float pad1;
+    float3 axisY;
+    float pad2;
+    float3 axisZ;
+    float pad3;
+    float3 halfExtents;
+    float pad4;
+};
+
+struct Plane
+{
+    float3 Normal;
+    float distance;
+    float3 minVect;
+    float pad1;
+    float3 maxVect;
+    float pad2;
+};
+
+
+struct HashEntry
+{
+    uint hash;
+    uint index;
+};
+
+struct CellRange
+{
+    uint start;
+    uint end;
+};
+
+uint Hash(uint3 c)
+{
+    return (c.x * 73856093u) ^ (c.y * 19349663u) ^ (c.z * 83492791u);
+}
+
+struct PickCB
+{
+    float3 rayOrigin;
+    float pad0;
+    float3 rayDir;
+    float pad1;
+};
+
+
+
+#endif

@@ -1,0 +1,80 @@
+#pragma once
+
+#include "/Engine/Public/Platform.ush"
+
+struct Particle
+{
+    float3 position;
+    float _pad1;
+    float3 prevPosition;
+    float _pad2;
+    float3 velocity;
+    float _pad3;
+    float3 accumulatedForce;
+    float _pad4;
+    float invMass;
+    float3 prevCollisionNormal;
+};
+
+struct Spring
+{
+    uint A, B;
+    float restingLength, lambda, compliance;
+    uint colour;
+    uint pad[2];
+};
+
+
+RWStructuredBuffer<Particle> Particles;
+RWStructuredBuffer<Spring> Springs;
+
+uint springCount;
+uint numSubsteps;
+uint springOffset;
+float dt;
+
+[numthreads(256, 1, 1)]
+void SolveSprings(uint3 DispatchThreadId : SV_DispatchThreadID)
+{
+    uint id = DispatchThreadId.x;
+    if (id >= springCount)
+        return;
+
+    uint globalIdx = springOffset + id;
+    Spring s = Springs[globalIdx];
+
+    Particle a = Particles[s.A];
+    Particle b = Particles[s.B];
+
+    float3 diff = b.position - a.position;
+    float distSq = dot(diff, diff);
+    if (distSq < 1e-12f)
+        return;
+
+    float invDist = rsqrt(distSq); // faster than 1/sqrt on GPU
+    float dist = distSq * invDist; // dist = sqrt(distSq), no extra sqrt
+    float3 dir = diff * invDist;
+
+    float C = dist - s.restingLength;
+
+    float w1 = a.invMass;
+    float w2 = b.invMass;
+    float wsum = w1 + w2;
+    if (wsum == 0.0f)
+        return;
+
+    float comp_dt = dt / (float) numSubsteps;
+    float alpha = (s.compliance * 1.0) / (comp_dt * comp_dt);
+    float denom = wsum + alpha;
+    if (denom == 0.0f)
+        return;
+
+    float lambdaChange = (-C - alpha * s.lambda) / denom;
+    s.lambda += lambdaChange;
+
+    // Direct write — safe because no two springs in this pass share a particle
+    Particles[s.A].position += w1 * lambdaChange * -dir;
+    Particles[s.B].position += w2 * lambdaChange * dir;
+
+    Springs[globalIdx] = s;
+}
