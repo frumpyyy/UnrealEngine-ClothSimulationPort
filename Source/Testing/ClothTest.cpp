@@ -6,6 +6,7 @@
 
 #include "Shader_XPBDCloth.h"
 #include "Shader_Integrate.h"
+#include "Shader_ResetLambda.h"
 
 // Sets default values
 AClothTest::AClothTest()
@@ -37,8 +38,10 @@ void AClothTest::Tick(float DeltaTime)
 	if (!PendingReadback)
 	{
 		ENQUEUE_RENDER_COMMAND(RunCloth)(
-			[this](FRHICommandListImmediate& RHIcmdList)
+			[this, DeltaTime](FRHICommandListImmediate& RHIcmdList)
 			{
+#pragma region BufferInit
+
 				FRDGBuilder GraphBuilder(RHIcmdList);
 
 				FRDGBufferRef ParticleBuffer = CreateStructuredBuffer(
@@ -59,12 +62,14 @@ void AClothTest::Tick(float DeltaTime)
 					sizeof(FGPUSpring) * GPUSprings.Num()
 				);
 
-				FIntegrateShaderInterface::AddPass_RenderThread(
-					GraphBuilder,
-					particles.Num(),
-					{ 0, 0, 981.0f },
-					0.016f,
-					GetGlobalShaderMap(GMaxRHIFeatureLevel),
+#pragma endregion
+
+#pragma region RenderPasses
+
+				FResetLambdaShaderInterface::AddPass_RenderThread(GraphBuilder, springs.Num(), GetGlobalShaderMap(GMaxRHIFeatureLevel), SpringBuffer);
+
+
+				FIntegrateShaderInterface::AddPass_RenderThread(GraphBuilder, particles.Num(), { 0, 0, 981.0f }, DeltaTime, GetGlobalShaderMap(GMaxRHIFeatureLevel),
 					ParticleBuffer);
 
 
@@ -75,17 +80,14 @@ void AClothTest::Tick(float DeltaTime)
 						continue;
 					}
 
-					FSolveSpringsShaderInterface::AddPass_RenderThread(
-						GraphBuilder,
-						colourOffsets[c],
-						colourCount[c],
-						1,
-						0.016f,
-						GetGlobalShaderMap(GMaxRHIFeatureLevel),
-						ParticleBuffer,
-						SpringBuffer
-					);
+					FSolveSpringsShaderInterface::AddPass_RenderThread(GraphBuilder, colourOffsets[c], colourCount[c], 1, DeltaTime, GetGlobalShaderMap(GMaxRHIFeatureLevel),
+						ParticleBuffer, SpringBuffer);
 				}
+
+
+#pragma endregion
+
+#pragma region ReadBackDebug
 
 				FRHIGPUBufferReadback* Readback = new FRHIGPUBufferReadback(TEXT("ClothReadback"));
 
@@ -102,6 +104,9 @@ void AClothTest::Tick(float DeltaTime)
 					{
 						this->PendingReadback = Readback;
 					});
+
+
+#pragma endregion
 			});
 	}
 

@@ -1,5 +1,3 @@
-#ifndef CLOTH_COMMON
-#define CLOTH_COMMON
 
 struct Particle
 {
@@ -21,59 +19,6 @@ struct Spring
     float restingLength, lambda, compliance;
     uint colour;
     uint pad[2];
-};
-
-cbuffer SimParams : register(b0)
-{
-    // group0
-    float dt;
-    float3 gravity;
-
-    // group1
-    float3 windVelocity;
-    float windDrag;
-
-    // group2
-    uint numParticles;
-    uint numSprings;
-    uint numIterations;
-    float compliance;
-
-    // group3
-    uint numSubSteps;
-    uint numSpheres;
-    uint numOBBs;
-    uint numPlanes;
-    uint numCells;
-
-    // group4
-    float cellSize;
-    float invCellSize;
-    float spacing;
-    float _SPpad0;
-
-    // group5
-    float damping;
-    float friction;
-    uint stage;
-    uint passOfStage;
-
-    // group6
-    uint numElements;
-    uint sortSize;
-    uint _SPpad2;
-    uint _SPpad3;
-    
-    uint particleIndex;
-    float stiffness;
-    float padding_a;
-    float padding_b;
-
-    float3 targetPosition;
-    float padding;
-
-    uint dragging;
-    float3 padding1;
 };
 
 struct Sphere
@@ -136,6 +81,3 @@ struct PickCB
     float pad1;
 };
 
-
-
-#endif

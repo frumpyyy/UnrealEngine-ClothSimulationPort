@@ -1,0 +1,17 @@
+#pragma once
+
+#include "/Engine/Public/Platform.ush"
+#include "ClothCommon.ush"
+
+RWStructuredBuffer<Spring> Springs;
+
+uint numSprings;
+
+[numthreads(256, 1, 1)]
+void ResetLambda(uint id : SV_DispatchThreadID)
+{
+    if (id >= numSprings)
+        return;
+
+    Springs[id].lambda = 0.0f;
+}
