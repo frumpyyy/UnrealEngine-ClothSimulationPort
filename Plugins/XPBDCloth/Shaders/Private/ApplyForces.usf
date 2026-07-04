@@ -1,0 +1,42 @@
+#pragma once
+
+#include "/Engine/Public/Platform.ush"
+#include "ClothCommon.ush"
+
+
+RWStructuredBuffer<Particle> Particles;
+
+uint numParticles;
+float3 gravity;
+
+[numthreads(256, 1, 1)]
+void ApplyForces(uint3 DispatchThreadId : SV_DispatchThreadID)
+{
+    uint id = DispatchThreadId.x;
+    if (id >= numParticles)
+        return;
+
+    Particle p = Particles[id];
+    if (p.invMass == 0.0f)
+        return;
+
+    if (length(gravity) > 0.00001f)
+        p.accumulatedForce += gravity;
+    
+    //if (length(windVelocity) > 0.00001f)
+    //{
+    //    float3 n = normalize(Normals[id]);
+    //    float3 windDir = normalize(windVelocity);
+
+    //    float3 relVel = windVelocity - p.velocity;
+    //    float facing = max(0.0f, dot(n, windDir));
+
+    //    float3 windForce = windDrag * (0.2f + facing) * relVel * 0.5f;
+        
+    //    windForce += (n * 0.3f) * sin((dt / numSubSteps) * 5 + id * 0.13f);
+
+    //    p.accumulatedForce += windForce;
+    //}
+
+    Particles[id] = p;
+}

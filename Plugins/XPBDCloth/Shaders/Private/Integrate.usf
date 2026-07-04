@@ -7,7 +7,7 @@
 RWStructuredBuffer<Particle> Particles;
 
 uint numParticles;
-float3 gravity;
+uint numSubsteps;
 float dt;
 
 [numthreads(256, 1, 1)]
@@ -20,14 +20,21 @@ void Integrate(uint3 DispatchThreadId : SV_DispatchThreadID)
     Particle p = Particles[id];
 
     if (p.invMass == 0)
+    {
+        p.accumulatedForce = float3(0, 0, 0);
+        Particles[id] = p;
         return;
-
-    if (length(gravity) > 0.0001)
-        p.velocity += gravity * dt;
+    }
 
     p.prevPosition = p.position;
 
-    p.position += p.velocity * dt;
+    float3 acceleration = p.accumulatedForce * p.invMass;
+    
+    p.velocity += acceleration * (dt / numSubsteps);
+    
+    p.position += p.velocity * (dt / numSubsteps);
 
+    p.accumulatedForce = float3(0, 0, 0);
+    
     Particles[id] = p;
 }

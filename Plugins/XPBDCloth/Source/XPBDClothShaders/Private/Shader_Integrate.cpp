@@ -14,7 +14,7 @@ public:
 
 	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
 		SHADER_PARAMETER(uint32, numParticles)
-		SHADER_PARAMETER(FVector3f, gravity)
+		SHADER_PARAMETER(uint32, numSubsteps)
 		SHADER_PARAMETER(float, dt)
 		SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<Particle>, Particles)
 	END_SHADER_PARAMETER_STRUCT();
@@ -31,7 +31,7 @@ public:
 
 IMPLEMENT_GLOBAL_SHADER(FIntegrateCS, "/XPBDCLOTH/Integrate.usf", "Integrate", SF_Compute);
 
-void FIntegrateShaderInterface::AddPass_RenderThread(FRDGBuilder& graphBuilder, uint32 inNumParticles, FVector3f inGravity, float inDt, FGlobalShaderMap* shaderMap, FRDGBufferRef particlesBufferRef) {
+void FIntegrateShaderInterface::AddPass_RenderThread(FRDGBuilder& graphBuilder, uint32 inNumParticles, uint32 inNumSubsteps, float inDt, FGlobalShaderMap* shaderMap, FRDGBufferRef particlesBufferRef) {
 	ensure(IsInRenderingThread());
 
 	RDG_EVENT_SCOPE(graphBuilder, "Integrate");
@@ -41,7 +41,7 @@ void FIntegrateShaderInterface::AddPass_RenderThread(FRDGBuilder& graphBuilder, 
 	FIntegrateCS::FParameters* params = graphBuilder.AllocParameters<FIntegrateCS::FParameters>();
 
 	params->dt = inDt;
-	params->gravity = inGravity;
+	params->numSubsteps = inNumSubsteps;
 	params->numParticles = inNumParticles;
 	params->Particles = graphBuilder.CreateUAV(particlesBufferRef);
 

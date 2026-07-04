@@ -27,29 +27,33 @@ struct FClothParticle {
 	GENERATED_BODY()
 
 	UPROPERTY()
-	FVector3f prevPosition;
+	FVector3f prevPosition = FVector3f::ZeroVector;
 
 	UPROPERTY()
-	FVector3f Position;
+	FVector3f Position = FVector3f::ZeroVector;
 
 	UPROPERTY()
-	FVector3f accumulatedForce;
+	FVector3f accumulatedForce = FVector3f::ZeroVector;
 
 	UPROPERTY()
-	FVector3f velocity{ 0,0,0 };
+	FVector3f velocity = FVector3f::ZeroVector;
 
 	UPROPERTY()
-	float invMass;
+	float invMass = 0.0f;
 };
 
 USTRUCT()
 struct FGPUParticle {
 	GENERATED_BODY()
 
-	FVector3f position; float _pad1;
-	FVector3f prevPosition; float _pad2;
-	FVector3f velocity; float _pad3;
-	FVector3f accumulatedForce; float _pad4;
+	FVector3f position;
+	float _pad1;
+	FVector3f prevPosition;
+	float _pad2;
+	FVector3f velocity;
+	float _pad3;
+	FVector3f accumulatedForce;
+	float _pad4;
 	float invMass;
 	FVector3f prevCollisionNormal;
 };

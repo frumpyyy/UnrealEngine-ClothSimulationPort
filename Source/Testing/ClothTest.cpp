@@ -7,6 +7,9 @@
 #include "Shader_XPBDCloth.h"
 #include "Shader_Integrate.h"
 #include "Shader_ResetLambda.h"
+#include "Shader_ApplyForce.h"
+
+#define NUMSUBSTEPS 1
 
 // Sets default values
 AClothTest::AClothTest()
@@ -66,23 +69,29 @@ void AClothTest::Tick(float DeltaTime)
 
 #pragma region RenderPasses
 
-				FResetLambdaShaderInterface::AddPass_RenderThread(GraphBuilder, springs.Num(), GetGlobalShaderMap(GMaxRHIFeatureLevel), SpringBuffer);
+				for (int i = 0; i < NUMSUBSTEPS; i++) {
+
+					FResetLambdaShaderInterface::AddPass_RenderThread(GraphBuilder, springs.Num(), GetGlobalShaderMap(GMaxRHIFeatureLevel), SpringBuffer);
+
+					FApplyForceShaderInterface::AddPass_RenderThread(GraphBuilder, particles.Num(), { 0,0,-981.0f }, GetGlobalShaderMap(GMaxRHIFeatureLevel), ParticleBuffer);
+
+					FIntegrateShaderInterface::AddPass_RenderThread(GraphBuilder, particles.Num(), NUMSUBSTEPS, DeltaTime, GetGlobalShaderMap(GMaxRHIFeatureLevel),
+						ParticleBuffer);
 
 
-				FIntegrateShaderInterface::AddPass_RenderThread(GraphBuilder, particles.Num(), { 0, 0, 981.0f }, DeltaTime, GetGlobalShaderMap(GMaxRHIFeatureLevel),
-					ParticleBuffer);
-
-
-				for (int32 c = 0; c < COLOURCOUNT; c++)
-				{
-					if (colourCount[c] == 0)
+					for (int32 c = 0; c < COLOURCOUNT; c++)
 					{
-						continue;
-					}
+						if (colourCount[c] == 0)
+						{
+							continue;
+						}
 
-					FSolveSpringsShaderInterface::AddPass_RenderThread(GraphBuilder, colourOffsets[c], colourCount[c], 1, DeltaTime, GetGlobalShaderMap(GMaxRHIFeatureLevel),
-						ParticleBuffer, SpringBuffer);
+						FSolveSpringsShaderInterface::AddPass_RenderThread(GraphBuilder, colourOffsets[c], colourCount[c], NUMSUBSTEPS, DeltaTime, GetGlobalShaderMap(GMaxRHIFeatureLevel),
+							ParticleBuffer, SpringBuffer);
+					}
 				}
+
+
 
 
 #pragma endregion
