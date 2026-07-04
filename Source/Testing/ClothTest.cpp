@@ -39,11 +39,26 @@ void AClothTest::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	timeAccumulator += DeltaTime;
 
+	while (timeAccumulator >= FixedTimestep) {
+		Simulate(FixedTimestep);
+		timeAccumulator -= FixedTimestep;
+	}
+
+	for (const FGPUParticle& P : particles)
+	{
+		DrawDebugPoint(GetWorld(), (FVector)P.position, 8.f, FColor::Red, false, -1.f, 0);
+	}
+
+
+}
+
+void AClothTest::Simulate(float deltaTime) {
 	if (!PendingReadback)
 	{
 		ENQUEUE_RENDER_COMMAND(RunCloth)(
-			[this, DeltaTime](FRHICommandListImmediate& RHIcmdList)
+			[this, deltaTime](FRHICommandListImmediate& RHIcmdList)
 			{
 #pragma region BufferInit
 
@@ -83,7 +98,7 @@ void AClothTest::Tick(float DeltaTime)
 
 					FApplyForceShaderInterface::AddPass_RenderThread(GraphBuilder, particleCount, Gravity, particleGroupCount, GetGlobalShaderMap(GMaxRHIFeatureLevel), ParticleBuffer);
 
-					FIntegrateShaderInterface::AddPass_RenderThread(GraphBuilder, particleCount, NUMSUBSTEPS, DeltaTime, particleGroupCount, GetGlobalShaderMap(GMaxRHIFeatureLevel), ParticleBuffer);
+					FIntegrateShaderInterface::AddPass_RenderThread(GraphBuilder, particleCount, NUMSUBSTEPS, deltaTime, particleGroupCount, GetGlobalShaderMap(GMaxRHIFeatureLevel), ParticleBuffer);
 
 
 					for (int32 c = 0; c < COLOURCOUNT; c++)
@@ -93,7 +108,7 @@ void AClothTest::Tick(float DeltaTime)
 							continue;
 						}
 
-						FSolveSpringsShaderInterface::AddPass_RenderThread(GraphBuilder, colourOffsets[c], colourCount[c], NUMSUBSTEPS, DeltaTime, particleGroupCount, GetGlobalShaderMap(GMaxRHIFeatureLevel),
+						FSolveSpringsShaderInterface::AddPass_RenderThread(GraphBuilder, colourOffsets[c], colourCount[c], NUMSUBSTEPS, deltaTime, particleGroupCount, GetGlobalShaderMap(GMaxRHIFeatureLevel),
 							ParticleBuffer, SpringBuffer);
 					}
 				}
@@ -159,11 +174,6 @@ void AClothTest::Tick(float DeltaTime)
 							*particles[0].position.ToString(), *particles[1].position.ToString());
 					});
 			});
-	}
-
-	for (const FGPUParticle& P : particles)
-	{
-		DrawDebugPoint(GetWorld(), (FVector)P.position, 8.f, FColor::Red, false, -1.f, 0);
 	}
 
 }

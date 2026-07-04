@@ -149,6 +149,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cloth|Physics")
 	FVector3f Gravity = FVector3f(0.0, 0.0, -981.0);
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cloth|Physics")
+	float FixedTimestep = 1.0f / 60.0f;
+
+	float timeAccumulator = 0.0f;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -158,6 +163,9 @@ protected:
 	void BuildSprings();
 
 	void InitGPUSprings();
+
+	UFUNCTION()
+	void Simulate(float deltaTime);
 
 	UPROPERTY()
 	TArray<FGPUParticle> particles;
