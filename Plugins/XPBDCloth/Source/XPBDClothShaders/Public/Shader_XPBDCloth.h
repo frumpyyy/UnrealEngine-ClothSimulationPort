@@ -28,5 +28,5 @@ struct FGPUS {
 
 class XPBDCLOTHSHADERS_API FSolveSpringsShaderInterface {
 public:
-	static void AddPass_RenderThread(FRDGBuilder& graphBuilder, uint32 inSpringOffset, uint32 inSpringCount, uint32 inNumSubsteps, float inDt, FGlobalShaderMap* shaderMap, FRDGBufferRef particlesBufferRef, FRDGBufferRef springsBufferRef);
+	static void AddPass_RenderThread(FRDGBuilder& graphBuilder, uint32 inSpringOffset, uint32 inSpringCount, uint32 inNumSubsteps, float inDt, uint32 groupSize, FGlobalShaderMap* shaderMap, FRDGBufferRef particlesBufferRef, FRDGBufferRef springsBufferRef);
 };

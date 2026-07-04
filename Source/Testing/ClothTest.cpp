@@ -8,6 +8,7 @@
 #include "Shader_Integrate.h"
 #include "Shader_ResetLambda.h"
 #include "Shader_ApplyForce.h"
+#include "Shader_Commons.h"
 
 #define NUMSUBSTEPS 1
 
@@ -38,6 +39,7 @@ void AClothTest::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+
 	if (!PendingReadback)
 	{
 		ENQUEUE_RENDER_COMMAND(RunCloth)(
@@ -65,18 +67,23 @@ void AClothTest::Tick(float DeltaTime)
 					sizeof(FGPUSpring) * GPUSprings.Num()
 				);
 
+				const uint32 threadGroupSize = 256;
+				const uint32 particleCount = particles.Num();
+				const uint32 springCount = springs.Num();
+				const uint32 particleGroupCount = FMath::DivideAndRoundUp(particleCount, threadGroupSize);
+				const uint32 springGroupCount = FMath::DivideAndRoundUp(springCount, threadGroupSize);
+
 #pragma endregion
 
 #pragma region RenderPasses
 
 				for (int i = 0; i < NUMSUBSTEPS; i++) {
 
-					FResetLambdaShaderInterface::AddPass_RenderThread(GraphBuilder, springs.Num(), GetGlobalShaderMap(GMaxRHIFeatureLevel), SpringBuffer);
+					FResetLambdaShaderInterface::AddPass_RenderThread(GraphBuilder, springCount, springGroupCount, GetGlobalShaderMap(GMaxRHIFeatureLevel), SpringBuffer);
 
-					FApplyForceShaderInterface::AddPass_RenderThread(GraphBuilder, particles.Num(), { 0,0,-981.0f }, GetGlobalShaderMap(GMaxRHIFeatureLevel), ParticleBuffer);
+					FApplyForceShaderInterface::AddPass_RenderThread(GraphBuilder, particleCount, Gravity, particleGroupCount, GetGlobalShaderMap(GMaxRHIFeatureLevel), ParticleBuffer);
 
-					FIntegrateShaderInterface::AddPass_RenderThread(GraphBuilder, particles.Num(), NUMSUBSTEPS, DeltaTime, GetGlobalShaderMap(GMaxRHIFeatureLevel),
-						ParticleBuffer);
+					FIntegrateShaderInterface::AddPass_RenderThread(GraphBuilder, particleCount, NUMSUBSTEPS, DeltaTime, particleGroupCount, GetGlobalShaderMap(GMaxRHIFeatureLevel), ParticleBuffer);
 
 
 					for (int32 c = 0; c < COLOURCOUNT; c++)
@@ -86,7 +93,7 @@ void AClothTest::Tick(float DeltaTime)
 							continue;
 						}
 
-						FSolveSpringsShaderInterface::AddPass_RenderThread(GraphBuilder, colourOffsets[c], colourCount[c], NUMSUBSTEPS, DeltaTime, GetGlobalShaderMap(GMaxRHIFeatureLevel),
+						FSolveSpringsShaderInterface::AddPass_RenderThread(GraphBuilder, colourOffsets[c], colourCount[c], NUMSUBSTEPS, DeltaTime, particleGroupCount, GetGlobalShaderMap(GMaxRHIFeatureLevel),
 							ParticleBuffer, SpringBuffer);
 					}
 				}

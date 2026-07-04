@@ -35,7 +35,7 @@ public:
 
 IMPLEMENT_GLOBAL_SHADER(FResetLambdaCS, "/XPBDCLOTH/ResetLambda.usf", "ResetLambda", SF_Compute);
 
-void FResetLambdaShaderInterface::AddPass_RenderThread(FRDGBuilder& graphBuilder, uint32 inNumSprings, FGlobalShaderMap* shaderMap, FRDGBufferRef springsBufferRef) {
+void FResetLambdaShaderInterface::AddPass_RenderThread(FRDGBuilder& graphBuilder, uint32 inNumSprings, uint32 groupSize, FGlobalShaderMap* shaderMap, FRDGBufferRef springsBufferRef) {
 	ensure(IsInRenderingThread());
 
 	RDG_EVENT_SCOPE(graphBuilder, "ResetLambda");
@@ -47,10 +47,7 @@ void FResetLambdaShaderInterface::AddPass_RenderThread(FRDGBuilder& graphBuilder
 	params->Springs = graphBuilder.CreateUAV(springsBufferRef);
 	params->numSprings = inNumSprings;
 
-	const uint32 threadGroupSize = 256;
-	const uint32 springGroupCount = FMath::DivideAndRoundUp(inNumSprings, threadGroupSize);
-
-	FComputeShaderUtils::AddPass(graphBuilder, RDG_EVENT_NAME("ResetLambda"), ERDGPassFlags::Compute | ERDGPassFlags::NeverCull, cShader, params, FIntVector(springGroupCount, 1, 1));
+	FComputeShaderUtils::AddPass(graphBuilder, RDG_EVENT_NAME("ResetLambda"), ERDGPassFlags::Compute | ERDGPassFlags::NeverCull, cShader, params, FIntVector(groupSize, 1, 1));
 
 }
 

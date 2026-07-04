@@ -1,0 +1,13 @@
+#pragma once
+
+#include "/Engine/Public/Platform.ush"
+#include "ClothCommon.ush"
+
+RWStructuredBuffer<Particle> Particles;
+
+
+[numthreads(256, 1, 1)]
+void UpdateVelocities(uint3 DispatchThreadId : SV_DispatchThreadID)
+{
+    
+}

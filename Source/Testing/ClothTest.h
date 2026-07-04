@@ -146,6 +146,9 @@ public:
 	// Sets default values for this actor's properties
 	AClothTest();
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cloth|Physics")
+	FVector3f Gravity = FVector3f(0.0, 0.0, -981.0);
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

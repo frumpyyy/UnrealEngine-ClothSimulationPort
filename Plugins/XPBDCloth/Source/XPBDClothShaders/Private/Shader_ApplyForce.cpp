@@ -29,7 +29,7 @@ public:
 
 IMPLEMENT_GLOBAL_SHADER(FApplyForceCS, "/XPBDCLOTH/ApplyForces.usf", "ApplyForces", SF_Compute);
 
-void FApplyForceShaderInterface::AddPass_RenderThread(FRDGBuilder& graphBuilder, uint32 inNumParticles, FVector3f inGravity, FGlobalShaderMap* shaderMap, FRDGBufferRef particlesBufferRef) {
+void FApplyForceShaderInterface::AddPass_RenderThread(FRDGBuilder& graphBuilder, uint32 inNumParticles, FVector3f inGravity, uint32 groupSize, FGlobalShaderMap* shaderMap, FRDGBufferRef particlesBufferRef) {
 
 	ensure(IsInRenderingThread());
 
@@ -43,10 +43,7 @@ void FApplyForceShaderInterface::AddPass_RenderThread(FRDGBuilder& graphBuilder,
 	params->numParticles = inNumParticles;
 	params->gravity = inGravity;
 
-	const uint32 threadGroupSize = 256;
-	const uint32 particleGroupCount = FMath::DivideAndRoundUp(inNumParticles, threadGroupSize);
-
-	FComputeShaderUtils::AddPass(graphBuilder, RDG_EVENT_NAME("ApplyForces"), ERDGPassFlags::Compute | ERDGPassFlags::NeverCull, cShader, params, FIntVector(particleGroupCount, 1, 1));
+	FComputeShaderUtils::AddPass(graphBuilder, RDG_EVENT_NAME("ApplyForces"), ERDGPassFlags::Compute | ERDGPassFlags::NeverCull, cShader, params, FIntVector(groupSize, 1, 1));
 
 }
 

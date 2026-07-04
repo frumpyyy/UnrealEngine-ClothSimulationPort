@@ -31,7 +31,7 @@ public:
 
 IMPLEMENT_GLOBAL_SHADER(FIntegrateCS, "/XPBDCLOTH/Integrate.usf", "Integrate", SF_Compute);
 
-void FIntegrateShaderInterface::AddPass_RenderThread(FRDGBuilder& graphBuilder, uint32 inNumParticles, uint32 inNumSubsteps, float inDt, FGlobalShaderMap* shaderMap, FRDGBufferRef particlesBufferRef) {
+void FIntegrateShaderInterface::AddPass_RenderThread(FRDGBuilder& graphBuilder, uint32 inNumParticles, uint32 inNumSubsteps, float inDt, uint32 groupSize, FGlobalShaderMap* shaderMap, FRDGBufferRef particlesBufferRef) {
 	ensure(IsInRenderingThread());
 
 	RDG_EVENT_SCOPE(graphBuilder, "Integrate");
@@ -45,10 +45,7 @@ void FIntegrateShaderInterface::AddPass_RenderThread(FRDGBuilder& graphBuilder, 
 	params->numParticles = inNumParticles;
 	params->Particles = graphBuilder.CreateUAV(particlesBufferRef);
 
-	const uint32 threadGroupSize = 256;
-	const uint32 particleGroupCount = FMath::DivideAndRoundUp(inNumParticles, threadGroupSize);
-
-	FComputeShaderUtils::AddPass(graphBuilder, RDG_EVENT_NAME("Integrate"), ERDGPassFlags::Compute | ERDGPassFlags::NeverCull, cShader, params, FIntVector(particleGroupCount, 1, 1));
+	FComputeShaderUtils::AddPass(graphBuilder, RDG_EVENT_NAME("Integrate"), ERDGPassFlags::Compute | ERDGPassFlags::NeverCull, cShader, params, FIntVector(groupSize, 1, 1));
 
 }
 

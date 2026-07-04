@@ -34,7 +34,7 @@ public:
 
 IMPLEMENT_GLOBAL_SHADER(FSolveSpringsCS, "/XPBDCLOTH/SolveSprings.usf", "SolveSprings", SF_Compute);
 
-void FSolveSpringsShaderInterface::AddPass_RenderThread(FRDGBuilder& graphBuilder, uint32 inSpringOffset, uint32 inSpringCount, uint32 inNumSubsteps, float inDt, FGlobalShaderMap* shaderMap, FRDGBufferRef particlesBufferRef, FRDGBufferRef springsBufferRef) {
+void FSolveSpringsShaderInterface::AddPass_RenderThread(FRDGBuilder& graphBuilder, uint32 inSpringOffset, uint32 inSpringCount, uint32 inNumSubsteps, float inDt, uint32 groupSize, FGlobalShaderMap* shaderMap, FRDGBufferRef particlesBufferRef, FRDGBufferRef springsBufferRef) {
 	ensure(IsInRenderingThread());
 
 	RDG_EVENT_SCOPE(graphBuilder, "SolveSprings");
@@ -50,10 +50,7 @@ void FSolveSpringsShaderInterface::AddPass_RenderThread(FRDGBuilder& graphBuilde
 	params->Particles = graphBuilder.CreateUAV(particlesBufferRef);
 	params->Springs = graphBuilder.CreateUAV(springsBufferRef);
 
-	const uint32 threadGroupSize = 256;
-	const uint32 particleGroupCount = FMath::DivideAndRoundUp(inSpringCount, threadGroupSize);
-
-	FComputeShaderUtils::AddPass(graphBuilder, RDG_EVENT_NAME("SolveSprings"), ERDGPassFlags::Compute | ERDGPassFlags::NeverCull, cShader, params, FIntVector(particleGroupCount, 1, 1));
+	FComputeShaderUtils::AddPass(graphBuilder, RDG_EVENT_NAME("SolveSprings"), ERDGPassFlags::Compute | ERDGPassFlags::NeverCull, cShader, params, FIntVector(groupSize, 1, 1));
 
 }
 
