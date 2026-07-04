@@ -193,7 +193,7 @@ protected:
 	float particleSpacing = 10.0f;
 
 	UPROPERTY(EditAnywhere)
-	int32 numSubsteps = 8;
+	int32 numSubsteps = 2;
 
 	UPROPERTY(EditAnywhere)
 	int32 numIterations = 2;

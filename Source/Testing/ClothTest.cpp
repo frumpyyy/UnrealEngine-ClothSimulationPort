@@ -9,8 +9,7 @@
 #include "Shader_ResetLambda.h"
 #include "Shader_ApplyForce.h"
 #include "Shader_Commons.h"
-
-#define NUMSUBSTEPS 1
+#include "Shader_ComputeNormals.h"
 
 // Sets default values
 AClothTest::AClothTest()
@@ -82,6 +81,17 @@ void AClothTest::Simulate(float deltaTime) {
 					sizeof(FGPUSpring) * GPUSprings.Num()
 				);
 
+				FRDGBufferRef NormalsBuffer = CreateStructuredBuffer(
+					GraphBuilder,
+					TEXT("Normals"),
+					sizeof(FVector3f),
+					particles.Num(),
+					nullptr,
+					0
+				);
+
+				AddClearUAVPass(GraphBuilder, GraphBuilder.CreateUAV(NormalsBuffer), 0.0f); //safely inits to 0 instead of def
+
 				const uint32 threadGroupSize = 256;
 				const uint32 particleCount = particles.Num();
 				const uint32 springCount = springs.Num();
@@ -92,25 +102,31 @@ void AClothTest::Simulate(float deltaTime) {
 
 #pragma region RenderPasses
 
-				for (int i = 0; i < NUMSUBSTEPS; i++) {
+				for (int i = 0; i < numSubsteps; i++) {
 
 					FResetLambdaShaderInterface::AddPass_RenderThread(GraphBuilder, springCount, springGroupCount, GetGlobalShaderMap(GMaxRHIFeatureLevel), SpringBuffer);
 
+					FNormalsShaderInterface::AddPass_RenderThread(GraphBuilder, clothWidth, clothHeight, particleCount, deltaTime, particleGroupCount, GetGlobalShaderMap(GMaxRHIFeatureLevel), ParticleBuffer, NormalsBuffer);
+
 					FApplyForceShaderInterface::AddPass_RenderThread(GraphBuilder, particleCount, Gravity, particleGroupCount, GetGlobalShaderMap(GMaxRHIFeatureLevel), ParticleBuffer);
 
-					FIntegrateShaderInterface::AddPass_RenderThread(GraphBuilder, particleCount, NUMSUBSTEPS, deltaTime, particleGroupCount, GetGlobalShaderMap(GMaxRHIFeatureLevel), ParticleBuffer);
+					FIntegrateShaderInterface::AddPass_RenderThread(GraphBuilder, particleCount, numSubsteps, deltaTime, particleGroupCount, GetGlobalShaderMap(GMaxRHIFeatureLevel), ParticleBuffer);
 
+					for (int x = 0; x < numIterations; x++) {
 
-					for (int32 c = 0; c < COLOURCOUNT; c++)
-					{
-						if (colourCount[c] == 0)
+						for (int32 c = 0; c < COLOURCOUNT; c++)
 						{
-							continue;
-						}
+							if (colourCount[c] == 0)
+							{
+								continue;
+							}
 
-						FSolveSpringsShaderInterface::AddPass_RenderThread(GraphBuilder, colourOffsets[c], colourCount[c], NUMSUBSTEPS, deltaTime, particleGroupCount, GetGlobalShaderMap(GMaxRHIFeatureLevel),
-							ParticleBuffer, SpringBuffer);
+							FSolveSpringsShaderInterface::AddPass_RenderThread(GraphBuilder, colourOffsets[c], colourCount[c], numSubsteps, deltaTime, particleGroupCount, GetGlobalShaderMap(GMaxRHIFeatureLevel),
+								ParticleBuffer, SpringBuffer);
+						}
 					}
+
+
 				}
 
 
@@ -170,8 +186,6 @@ void AClothTest::Simulate(float deltaTime) {
 							particles[i].position = ResultPositions[i];
 						}
 
-						UE_LOG(LogTemp, Warning, TEXT("P0: %s  P1: %s"),
-							*particles[0].position.ToString(), *particles[1].position.ToString());
 					});
 			});
 	}
@@ -186,7 +200,7 @@ void AClothTest::BuildParticles() {
 		{
 			int i = y * clothWidth + x;
 
-			particles[i].position = FVector3f(x * particleSpacing, 0, y * particleSpacing);
+			particles[i].position = FVector3f(x * particleSpacing, 0, -y * particleSpacing);
 
 			particles[i].prevPosition = particles[i].position;
 
