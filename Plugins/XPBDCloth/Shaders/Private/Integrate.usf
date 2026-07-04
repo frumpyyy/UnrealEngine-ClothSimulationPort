@@ -1,20 +1,7 @@
 #pragma once
 
 #include "/Engine/Public/Platform.ush"
-
-struct Particle
-{
-    float3 position;
-    float _pad1;
-    float3 prevPosition;
-    float _pad2;
-    float3 velocity;
-    float _pad3;
-    float3 accumulatedForce;
-    float _pad4;
-    float invMass;
-    float3 prevCollisionNormal;
-};
+#include "ClothCommon.ush"
 
 
 RWStructuredBuffer<Particle> Particles;
