@@ -1,0 +1,25 @@
+#pragma once
+
+#include "/Engine/Public/Platform.ush"
+#include "ClothCommon.ush"
+
+RWStructuredBuffer<Particle> Particles;
+RWStructuredBuffer<float3> Normals;
+RWTexture2D<float4> PositionOut;
+RWTexture2D<float4> NormalsOut;
+
+uint clothWidth;
+uint clothHeight;
+
+[numthreads(8, 8, 1)]
+void WriteTextures(uint3 DispatchThreadId : SV_DispatchThreadID)
+{
+    if (DispatchThreadId.x >= clothWidth || DispatchThreadId.y >= clothHeight)
+        return;
+    
+    uint idx = DispatchThreadId.y * clothWidth + DispatchThreadId.x;
+    
+    PositionOut[DispatchThreadId.xy] = float4(Particles[idx].position, 1.0f);
+    NormalsOut[DispatchThreadId.xy] = float4(Normals[idx], 0.0f);
+
+}

@@ -10,6 +10,10 @@
 #include "Shader_ApplyForce.h"
 #include "Shader_Commons.h"
 #include "Shader_ComputeNormals.h"
+#include "Shader_TextureWrite.h"
+
+#include "Engine/TextureRenderTarget2D.h"
+#include "Kismet/KismetRenderingLibrary.h"
 
 // Sets default values
 AClothTest::AClothTest()
@@ -17,6 +21,10 @@ AClothTest::AClothTest()
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	ClothMeshComp = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("ClothMesh"));
+	RootComponent = ClothMeshComp;
+	ClothMeshComp->SetVisibility(true);
+	ClothMeshComp->SetHiddenInGame(false);
 }
 
 // Called when the game starts or when spawned
@@ -27,9 +35,16 @@ void AClothTest::BeginPlay()
 	BuildParticles();
 	BuildSprings();
 	InitGPUSprings();
+	BuildClothMesh();
+	UE_LOG(LogTemp, Warning, TEXT("Mesh sections: %d"), ClothMeshComp->GetNumSections());
+	UE_LOG(LogTemp, Warning, TEXT("Actor location: %s"), *GetActorLocation().ToString());
+	UE_LOG(LogTemp, Warning, TEXT("Cloth dimensions: %d x %d"), clothWidth, clothHeight);
+	InitRendering();
 
 	UE_LOG(LogTemp, Warning, TEXT("Particles: %d"), particles.Num());
 	UE_LOG(LogTemp, Warning, TEXT("Springs: %d"), springs.Num());
+
+
 
 }
 
@@ -133,6 +148,16 @@ void AClothTest::Simulate(float deltaTime) {
 
 
 #pragma endregion
+
+#pragma region TextureWriting
+
+				FRDGTextureRef PositionTexture = RegisterExternalTexture(GraphBuilder, PositionRenderTarget->GetRenderTargetResource()->GetRenderTargetTexture(), TEXT("ClothPositionRenderTarget"));
+				FRDGTextureRef NormalTexture = RegisterExternalTexture(GraphBuilder, NormalsRenderTarget->GetRenderTargetResource()->GetRenderTargetTexture(), TEXT("ClothNormalsRenderTarget"));
+
+				FTextureWriteShaderInterface::AddPass_RenderThread(GraphBuilder, clothWidth, clothHeight, GetGlobalShaderMap(GMaxRHIFeatureLevel), ParticleBuffer, NormalsBuffer, PositionTexture, NormalTexture);
+
+#pragma endregion
+
 
 #pragma region ReadBackDebug
 
@@ -369,4 +394,72 @@ void AClothTest::InitGPUSprings() {
 		running += colourCount[colour];
 	}
 
+}
+
+void AClothTest::InitRendering() {
+	PositionRenderTarget = NewObject<UTextureRenderTarget2D>(this);
+	PositionRenderTarget->RenderTargetFormat = RTF_RGBA32f; //using 32 here for better world pos precision
+	PositionRenderTarget->bCanCreateUAV = true;
+	PositionRenderTarget->InitAutoFormat(clothWidth, clothHeight);
+	PositionRenderTarget->UpdateResourceImmediate(true);
+	UKismetRenderingLibrary::ClearRenderTarget2D(this, PositionRenderTarget, FLinearColor(0, 0, 0, 0));
+
+	NormalsRenderTarget = NewObject<UTextureRenderTarget2D>(this);
+	NormalsRenderTarget->RenderTargetFormat = RTF_RGBA16f; // normals only need -1 to 1 range
+	NormalsRenderTarget->bCanCreateUAV = true;
+	NormalsRenderTarget->InitAutoFormat(clothWidth, clothHeight);
+	NormalsRenderTarget->UpdateResourceImmediate(true);
+	UKismetRenderingLibrary::ClearRenderTarget2D(this, NormalsRenderTarget, FLinearColor(0, 1, 0, 0));
+
+	if (ClothMeshComp && ClothMaterial) {
+		ClothDynamicMat = UMaterialInstanceDynamic::Create(ClothMaterial, this);
+		ClothDynamicMat->SetTextureParameterValue(TEXT("PositionMap"), PositionRenderTarget);
+		ClothDynamicMat->SetTextureParameterValue(TEXT("NormalMap"), NormalsRenderTarget);
+		ClothMeshComp->SetMaterial(0, ClothDynamicMat);
+	}
+}
+
+void AClothTest::BuildClothMesh() {
+	TArray<FVector> Vertices;
+	TArray<FVector> Normals;
+	TArray<FVector2D> UVs;
+	TArray<FLinearColor> Colours;
+	TArray<int32> Tris;
+	TArray<FProcMeshTangent> Tangents;
+
+	Vertices.SetNum(clothWidth * clothHeight);
+	Normals.SetNum(clothWidth * clothHeight);
+	UVs.SetNum(clothWidth * clothHeight);
+
+	uint32 h = (uint32)clothHeight;
+	uint32 w = (uint32)clothWidth;
+
+	for (uint32 y = 0; y < h; y++) {
+		for (uint32 x = 0; x < w; x++) {
+			uint32 idx = y * w + x;
+			Vertices[idx] = FVector::ZeroVector;
+			Normals[idx] = FVector::UpVector;
+			UVs[idx] = FVector2D((float)x / (w - 1), (float)y / (h - 1));
+		}
+	}
+
+
+	for (uint32 y = 0; y < (h - 1); y++) {
+		for (uint32 x = 0; x < (w - 1); x++) {
+			uint32 i0 = y * w + x;
+			uint32 i1 = i0 + 1;
+			uint32 i2 = i0 + w;
+			uint32 i3 = i2 + 1;
+
+			Tris.Add(i0);
+			Tris.Add(i2);
+			Tris.Add(i1);
+
+			Tris.Add(i1);
+			Tris.Add(i2);
+			Tris.Add(i3);
+		}
+	}
+
+	ClothMeshComp->CreateMeshSection_LinearColor(0, Vertices, Tris, Normals, UVs, Colours, Tangents, false);
 }

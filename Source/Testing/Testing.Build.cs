@@ -12,7 +12,7 @@ public class Testing : ModuleRules
     "RHI",
     "Renderer"});
 
-        PrivateDependencyModuleNames.AddRange(new string[] { });
+        PrivateDependencyModuleNames.AddRange(new string[] { "ProceduralMeshComponent" });
 
         // Uncomment if you are using Slate UI
         // PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });

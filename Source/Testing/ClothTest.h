@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "RHIGPUReadback.h"
+#include "ProceduralMeshComponent.h"
 
 #include "ClothTest.generated.h"
 
@@ -164,6 +165,10 @@ protected:
 
 	void InitGPUSprings();
 
+	void InitRendering();
+
+	void BuildClothMesh();
+
 	UFUNCTION()
 	void Simulate(float deltaTime);
 
@@ -206,5 +211,23 @@ protected:
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+private:
+
+	UPROPERTY()
+	UTextureRenderTarget2D* PositionRenderTarget;
+
+	UPROPERTY()
+	UTextureRenderTarget2D* NormalsRenderTarget;
+
+	UPROPERTY(EditAnywhere, Category = "Cloth|Rendering")
+	UMaterialInterface* ClothMaterial;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* ClothDynamicMat;
+
+	UPROPERTY()
+	UProceduralMeshComponent* ClothMeshComp;
+
 
 };
