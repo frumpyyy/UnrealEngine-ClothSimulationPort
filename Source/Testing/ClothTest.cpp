@@ -415,6 +415,14 @@ void AClothTest::InitRendering() {
 	if (ClothMeshComp && ClothMaterial) {
 		ClothDynamicMat = UMaterialInstanceDynamic::Create(ClothMaterial, this);
 		ClothDynamicMat->SetTextureParameterValue(TEXT("PositionMap"), PositionRenderTarget);
+		UTexture* Tex = nullptr;
+		ClothDynamicMat->GetTextureParameterValue(
+			FMaterialParameterInfo(TEXT("PositionMap")),
+			Tex);
+
+		UE_LOG(LogTemp, Warning,
+			TEXT("Bound texture: %s"),
+			Tex ? *Tex->GetName() : TEXT("NULL"));
 		ClothDynamicMat->SetTextureParameterValue(TEXT("NormalMap"), NormalsRenderTarget);
 		ClothMeshComp->SetMaterial(0, ClothDynamicMat);
 	}
