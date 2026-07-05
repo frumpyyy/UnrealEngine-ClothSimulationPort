@@ -25,6 +25,7 @@ AClothTest::AClothTest()
 	RootComponent = ClothMeshComp;
 	ClothMeshComp->SetVisibility(true);
 	ClothMeshComp->SetHiddenInGame(false);
+	ClothMeshComp->SetBoundsScale(10.0f);
 }
 
 // Called when the game starts or when spawned
@@ -437,7 +438,7 @@ void AClothTest::BuildClothMesh() {
 	for (uint32 y = 0; y < h; y++) {
 		for (uint32 x = 0; x < w; x++) {
 			uint32 idx = y * w + x;
-			Vertices[idx] = FVector::ZeroVector;
+			Vertices[idx] = FVector(x * particleSpacing, 0, -(float)y * particleSpacing);
 			Normals[idx] = FVector::UpVector;
 			UVs[idx] = FVector2D((float)x / (w - 1), (float)y / (h - 1));
 		}
