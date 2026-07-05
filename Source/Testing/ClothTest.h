@@ -207,6 +207,9 @@ protected:
 	float ClothCompilance = 0.0005f;
 
 	FRHIGPUBufferReadback* PendingReadback = nullptr;
+	FRHIGPUBufferReadback* PendingDebugReadback = nullptr;
+
+	TArray<FVector3f> LatestDebugPoints;
 
 public:
 	// Called every frame

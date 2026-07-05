@@ -11,6 +11,7 @@
 #include "Shader_Commons.h"
 #include "Shader_ComputeNormals.h"
 #include "Shader_TextureWrite.h"
+#include "Shader_DebugPoints.h"
 
 #include "Engine/TextureRenderTarget2D.h"
 #include "Kismet/KismetRenderingLibrary.h"
@@ -66,7 +67,10 @@ void AClothTest::Tick(float DeltaTime)
 		DrawDebugPoint(GetWorld(), (FVector)P.position, 8.f, FColor::Red, false, -1.f, 0);
 	}
 
-
+	for (const FVector3f& P : LatestDebugPoints)
+	{
+		DrawDebugPoint(GetWorld(), (FVector)P, 10.f, FColor::Green, false, -1.f, 0);
+	}
 }
 
 void AClothTest::Simulate(float deltaTime) {
@@ -162,6 +166,15 @@ void AClothTest::Simulate(float deltaTime) {
 
 #pragma region ReadBackDebug
 
+				FRDGBufferRef DebugBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("DebugSample"), sizeof(FVector3f), particleCount, nullptr, 0);
+
+				FDebugPointsShaderInterface::AddPass_RenderThread(GraphBuilder, clothWidth, clothHeight, GetGlobalShaderMap(GMaxRHIFeatureLevel), DebugBuffer, PositionTexture);
+
+				FRHIGPUBufferReadback* DebugReadback = new FRHIGPUBufferReadback(TEXT("DebugReadback"));
+				AddEnqueueCopyPass(GraphBuilder, DebugReadback, DebugBuffer, sizeof(FVector3f) * particleCount);
+
+
+
 				FRHIGPUBufferReadback* Readback = new FRHIGPUBufferReadback(TEXT("ClothReadback"));
 
 				AddEnqueueCopyPass(
@@ -173,9 +186,10 @@ void AClothTest::Simulate(float deltaTime) {
 
 				GraphBuilder.Execute();
 
-				AsyncTask(ENamedThreads::GameThread, [this, Readback]()
+				AsyncTask(ENamedThreads::GameThread, [this, Readback, DebugReadback]()
 					{
 						this->PendingReadback = Readback;
+						this->PendingDebugReadback = DebugReadback;
 					});
 
 
@@ -212,6 +226,35 @@ void AClothTest::Simulate(float deltaTime) {
 							particles[i].position = ResultPositions[i];
 						}
 
+					});
+			});
+	}
+
+	if (PendingDebugReadback && PendingDebugReadback->IsReady())
+	{
+		FRHIGPUBufferReadback* DebugReadbackToProcess = PendingDebugReadback;
+		PendingDebugReadback = nullptr;
+
+		int32 NumParticles = particles.Num();
+
+		ENQUEUE_RENDER_COMMAND(ReadDebugBack)(
+			[this, DebugReadbackToProcess, NumParticles](FRHICommandListImmediate& RHICmdList)
+			{
+				const FVector3f* DebugData = (const FVector3f*)DebugReadbackToProcess->Lock(sizeof(FVector3f) * NumParticles);
+
+				TArray<FVector3f> DebugPositions;
+				DebugPositions.SetNumUninitialized(NumParticles);
+				for (int32 i = 0; i < NumParticles; i++)
+				{
+					DebugPositions[i] = DebugData[i];
+				}
+
+				DebugReadbackToProcess->Unlock();
+				delete DebugReadbackToProcess;
+
+				AsyncTask(ENamedThreads::GameThread, [this, DebugPositions = MoveTemp(DebugPositions)]()
+					{
+						LatestDebugPoints = DebugPositions;
 					});
 			});
 	}

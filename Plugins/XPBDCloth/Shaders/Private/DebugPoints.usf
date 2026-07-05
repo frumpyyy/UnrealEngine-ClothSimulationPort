@@ -1,0 +1,22 @@
+#pragma once
+
+#include "/Engine/Public/Platform.ush"
+#include "ClothCommon.ush"
+
+RWStructuredBuffer<float3> DebugOut;
+RWTexture2D<float4> PositionIn;
+
+uint clothWidth;
+uint clothHeight;
+
+[numthreads(8, 8, 1)]
+void DebugPoints(uint3 DispatchThreadId : SV_DispatchThreadID)
+{
+    if (DispatchThreadId.x >= clothWidth || DispatchThreadId.y >= clothHeight)
+        return;
+    
+    uint idx = DispatchThreadId.y * clothWidth + DispatchThreadId.x;
+    
+    DebugOut[idx] = PositionIn[DispatchThreadId.xy].xyz;
+
+}
