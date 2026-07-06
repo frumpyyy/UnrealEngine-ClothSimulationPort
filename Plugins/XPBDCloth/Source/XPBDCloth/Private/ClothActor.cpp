@@ -74,15 +74,17 @@ void AClothActor::Tick(float DeltaTime)
 		timeAccumulator -= FixedTimestep;
 	}
 
-	for (const FGPUParticle& P : particles)
-	{
-		DrawDebugPoint(GetWorld(), (FVector)P.position, 8.f, FColor::Red, false, -1.f, 0);
-	}
+	if (DebugParticleBufferPositions)
+		for (const FGPUParticle& P : particles)
+		{
+			DrawDebugPoint(GetWorld(), (FVector)P.position, 8.f, FColor::Red, false, -1.f, 0);
+		}
 
-	for (const FVector3f& P : LatestDebugPoints)
-	{
-		DrawDebugPoint(GetWorld(), (FVector)P, 10.f, FColor::Green, false, -1.f, 0);
-	}
+	if (DebugParticleWPOPositions)
+		for (const FVector3f& P : LatestDebugPoints)
+		{
+			DrawDebugPoint(GetWorld(), (FVector)P, 10.f, FColor::Green, false, -1.f, 0);
+		}
 }
 
 void AClothActor::Simulate(float deltaTime) {
@@ -242,7 +244,7 @@ void AClothActor::Simulate(float deltaTime) {
 			});
 	}
 
-	if (PendingDebugReadback && PendingDebugReadback->IsReady())
+	if (PendingDebugReadback && PendingDebugReadback->IsReady() && DebugParticleWPOPositions)
 	{
 		FRHIGPUBufferReadback* DebugReadbackToProcess = PendingDebugReadback;
 		PendingDebugReadback = nullptr;

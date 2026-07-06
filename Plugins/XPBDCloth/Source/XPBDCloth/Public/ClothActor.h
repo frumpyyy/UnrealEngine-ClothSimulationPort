@@ -152,6 +152,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cloth|Physics")
 	FVector3f Gravity = FVector3f(0.0, 0.0, -981.0);
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cloth|Debug")
+	bool DebugParticleBufferPositions = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cloth|Debug")
+	bool DebugParticleWPOPositions = false;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cloth|Design")
 	int32 clothWidth = 10;
 
