@@ -165,6 +165,9 @@ public:
 	int32 clothHeight = 10;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cloth|Design")
+	UTexture2D* clothTexture;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cloth|Design")
 	float particleSpacing = 10.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cloth|Solver")

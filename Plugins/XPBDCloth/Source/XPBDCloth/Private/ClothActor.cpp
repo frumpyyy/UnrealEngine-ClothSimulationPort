@@ -503,7 +503,12 @@ void AClothActor::InitRendering() {
 			Tex ? *Tex->GetName() : TEXT("NULL"));
 		ClothDynamicMat->SetTextureParameterValue(TEXT("NormalMap"), NormalsRenderTarget);
 		ClothMeshComp->SetMaterial(0, ClothDynamicMat);
+
+		if (clothTexture)
+			ClothDynamicMat->SetTextureParameterValue(TEXT("ColourMap"), clothTexture);
 	}
+
+
 }
 
 void AClothActor::BuildClothMesh() {
