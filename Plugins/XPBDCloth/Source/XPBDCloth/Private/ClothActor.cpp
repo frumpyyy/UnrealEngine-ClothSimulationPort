@@ -27,6 +27,17 @@ AClothActor::AClothActor()
 	ClothMeshComp->SetVisibility(true);
 	ClothMeshComp->SetHiddenInGame(false);
 	ClothMeshComp->SetBoundsScale(10.0f);
+
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> DefaultMaterial(TEXT("/XPBDCloth/M_DefaultCloth.M_DefaultCloth"));
+	if (DefaultMaterial.Succeeded()) {
+		ClothMaterial = DefaultMaterial.Object;
+		UE_LOG(LogTemp, Warning, TEXT("Default cloth material loaded: %s"), *ClothMaterial->GetName());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to load default cloth material at specified path"));
+	}
+
 }
 
 // Called when the game starts or when spawned
