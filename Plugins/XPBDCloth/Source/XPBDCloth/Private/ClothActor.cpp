@@ -1,4 +1,4 @@
-#include "ClothTest.h"
+#include "ClothActor.h"
 #include "RenderGraphBuilder.h"
 #include "RenderGraphUtils.h"
 #include "RenderGraphResources.h"
@@ -17,7 +17,7 @@
 #include "Kismet/KismetRenderingLibrary.h"
 
 // Sets default values
-AClothTest::AClothTest()
+AClothActor::AClothActor()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -30,7 +30,7 @@ AClothTest::AClothTest()
 }
 
 // Called when the game starts or when spawned
-void AClothTest::BeginPlay()
+void AClothActor::BeginPlay()
 {
 	Super::BeginPlay();
 
@@ -50,8 +50,20 @@ void AClothTest::BeginPlay()
 
 }
 
+void AClothActor::OnConstruction(const FTransform& Transform) {
+	Super::OnConstruction(Transform);
+	RebuildCloth();
+}
+
+#if WITH_EDITOR
+void AClothActor::PostEditChangeProperty(FPropertyChangedEvent& propertyChanged) {
+	Super::PostEditChangeProperty(propertyChanged);
+	RebuildCloth();
+}
+#endif
+
 // Called every frame
-void AClothTest::Tick(float DeltaTime)
+void AClothActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
@@ -73,7 +85,7 @@ void AClothTest::Tick(float DeltaTime)
 	}
 }
 
-void AClothTest::Simulate(float deltaTime) {
+void AClothActor::Simulate(float deltaTime) {
 	if (!PendingReadback)
 	{
 		ENQUEUE_RENDER_COMMAND(RunCloth)(
@@ -261,15 +273,25 @@ void AClothTest::Simulate(float deltaTime) {
 
 }
 
-void AClothTest::BuildParticles() {
+void AClothActor::RebuildCloth() {
+
+}
+
+void AClothActor::BuildParticles() {
 	particles.SetNum(clothHeight * clothWidth);
+
+	FTransform clothActorTransform = GetActorTransform();
+
 	for (int y = 0; y < clothHeight; y++)
 	{
 		for (int x = 0; x < clothWidth; x++)
 		{
 			int i = y * clothWidth + x;
 
-			particles[i].position = FVector3f(x * particleSpacing, 0, -y * particleSpacing);
+			FVector localPosition(x * particleSpacing, 0, -y * particleSpacing);
+			FVector worldPosition = clothActorTransform.TransformPosition(localPosition);
+
+			particles[i].position = FVector3f(worldPosition);
 
 			particles[i].prevPosition = particles[i].position;
 
@@ -287,7 +309,7 @@ void AClothTest::BuildParticles() {
 
 }
 
-void AClothTest::BuildSprings() {
+void AClothActor::BuildSprings() {
 	springs.Empty();
 
 	for (int y = 0; y < clothHeight; y++)
@@ -404,7 +426,7 @@ static uint32_t AssignColour(int xCoord, int yCoord, ESpringType type) {
 	}
 }
 
-void AClothTest::InitGPUSprings() {
+void AClothActor::InitGPUSprings() {
 	GPUSprings.Reserve(springs.Num());
 
 	for (const FSpringCoordStore& tag : springs) {
@@ -440,7 +462,7 @@ void AClothTest::InitGPUSprings() {
 
 }
 
-void AClothTest::InitRendering() {
+void AClothActor::InitRendering() {
 	PositionRenderTarget = NewObject<UTextureRenderTarget2D>(this);
 	PositionRenderTarget->RenderTargetFormat = RTF_RGBA32f; //using 32 here for better world pos precision
 	PositionRenderTarget->bCanCreateUAV = true;
@@ -471,7 +493,7 @@ void AClothTest::InitRendering() {
 	}
 }
 
-void AClothTest::BuildClothMesh() {
+void AClothActor::BuildClothMesh() {
 	TArray<FVector> Vertices;
 	TArray<FVector> Normals;
 	TArray<FVector2D> UVs;

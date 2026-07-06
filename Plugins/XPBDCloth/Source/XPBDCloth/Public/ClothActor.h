@@ -7,7 +7,7 @@
 #include "RHIGPUReadback.h"
 #include "ProceduralMeshComponent.h"
 
-#include "ClothTest.generated.h"
+#include "ClothActor.generated.h"
 
 #define COLOURCOUNT 20
 
@@ -139,18 +139,38 @@ struct FGPUSpring {
 };
 
 UCLASS()
-class TESTING_API AClothTest : public AActor
+class XPBDCLOTH_API AClothActor : public AActor
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this actor's properties
-	AClothTest();
+	AClothActor();
+
+	virtual void Tick(float DeltaTime) override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cloth|Physics")
 	FVector3f Gravity = FVector3f(0.0, 0.0, -981.0);
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cloth|Design")
+	int32 clothWidth = 10;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cloth|Design")
+	int32 clothHeight = 10;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cloth|Design")
+	float particleSpacing = 10.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cloth|Solver")
+	int32 numSubsteps = 2;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cloth|Solver")
+	int32 numIterations = 2;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cloth|Physics")
+	float ClothCompilance = 0.0005f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cloth|Solver")
 	float FixedTimestep = 1.0f / 60.0f;
 
 	float timeAccumulator = 0.0f;
@@ -159,18 +179,11 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	void BuildParticles();
+	virtual void OnConstruction(const FTransform& Transform) override;
 
-	void BuildSprings();
-
-	void InitGPUSprings();
-
-	void InitRendering();
-
-	void BuildClothMesh();
-
-	UFUNCTION()
-	void Simulate(float deltaTime);
+#if WITH_EDITOR
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& propertyChanged) override;
+#endif
 
 	UPROPERTY()
 	TArray<FGPUParticle> particles;
@@ -188,34 +201,28 @@ protected:
 	UPROPERTY()
 	TArray<uint32> colourCount;
 
-	UPROPERTY(EditAnywhere)
-	int32 clothWidth = 10;
-
-	UPROPERTY(EditAnywhere)
-	int32 clothHeight = 10;
-
-	UPROPERTY(EditAnywhere)
-	float particleSpacing = 10.0f;
-
-	UPROPERTY(EditAnywhere)
-	int32 numSubsteps = 2;
-
-	UPROPERTY(EditAnywhere)
-	int32 numIterations = 2;
-
-	UPROPERTY(EditAnywhere)
-	float ClothCompilance = 0.0005f;
-
 	FRHIGPUBufferReadback* PendingReadback = nullptr;
 	FRHIGPUBufferReadback* PendingDebugReadback = nullptr;
 
 	TArray<FVector3f> LatestDebugPoints;
 
-public:
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 
 private:
+
+	void RebuildCloth();
+
+	void BuildParticles();
+
+	void BuildSprings();
+
+	void InitGPUSprings();
+
+	void InitRendering();
+
+	void BuildClothMesh();
+
+	UFUNCTION()
+	void Simulate(float deltaTime);
 
 	UPROPERTY()
 	UTextureRenderTarget2D* PositionRenderTarget;
