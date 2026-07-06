@@ -1,5 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
+using System.Collections.Generic;
 using UnrealBuildTool;
 
 public class XPBDCloth : ModuleRules
@@ -34,6 +35,12 @@ public class XPBDCloth : ModuleRules
 			}
             );
 
+
+        if (Target.bBuildEditor)
+        {
+            PrivateDependencyModuleNames.Add("PlacementMode");
+
+        }
 
         PrivateDependencyModuleNames.AddRange(
             new string[]

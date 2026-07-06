@@ -2,11 +2,27 @@
 
 #include "XPBDCloth.h"
 
+#if WITH_EDITOR
+#include "IPlacementModeModule.h"
+#endif
+
 #define LOCTEXT_NAMESPACE "FXPBDClothModule"
 
 void FXPBDClothModule::StartupModule()
 {
-	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
+
+#if WITH_EDITOR
+	if (IPlacementModeModule::IsAvailable()) {
+		FPlacementCategoryInfo placementInfo(
+			FText::FromString("Cloth"),
+			FSlateIcon("EditorStyle", "PlacementBrowser.Icons.All"),
+			"XPBDCloth",
+			TEXT("PMXPBDCloth"), 30);
+
+		IPlacementModeModule::Get().RegisterPlacementCategory(placementInfo);
+	}
+#endif
+
 }
 
 void FXPBDClothModule::ShutdownModule()
@@ -16,5 +32,5 @@ void FXPBDClothModule::ShutdownModule()
 }
 
 #undef LOCTEXT_NAMESPACE
-	
+
 IMPLEMENT_MODULE(FXPBDClothModule, XPBDCloth)

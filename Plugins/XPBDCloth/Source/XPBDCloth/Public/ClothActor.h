@@ -138,7 +138,7 @@ struct FGPUSpring {
 	uint32 pad[2];
 };
 
-UCLASS()
+UCLASS(Blueprintable, ClassGroup = (XPBDCloth), meta = (BlueprintSpawnableComponent))
 class XPBDCLOTH_API AClothActor : public AActor
 {
 	GENERATED_BODY()
